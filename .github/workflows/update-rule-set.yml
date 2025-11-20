@@ -38,7 +38,7 @@ jobs:
 
       # 5️⃣ 上传 artifact，方便下载
       - name: Upload .srs files as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sing-box-srs
           path: work/
