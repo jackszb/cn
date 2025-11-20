@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import json
@@ -5,27 +6,31 @@ import requests
 import maxminddb
 from aggregate6 import aggregate
 
-output_dir = "./rule-set"
+# ------------------ 参数解析 ------------------
+parser = argparse.ArgumentParser()
+parser.add_argument("--output-dir", default="./rule-set", help="Output directory for .srs files")
+args = parser.parse_args()
+output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
 
-# 域名规则
+# ------------------ 数据源 ------------------
 dnsmasq_china_list = [
     "https://raw.githubusercontent.com/Dreista/sing-box-rule-set-cn/rule-set/accelerated-domains.china.conf"
 ]
 
-# MaxMind IP 规则
 maxmind_urls = [
     "https://raw.githubusercontent.com/Dreamacro/maxmind-geoip/release/Country.mmdb"
 ]
 
-# AdGuard / GFWList
 adguard_urls = [
     "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
 ]
+
 gfwlist_urls = [
     "https://raw.githubusercontent.com/gfwlist/gfwlist/refs/heads/master/list.txt"
 ]
 
+# ------------------ 函数 ------------------
 def convert_dnsmasq(url: str):
     r = requests.get(url)
     domain_suffix_list = []
@@ -71,6 +76,7 @@ def convert_adguard(url: str):
     srs_path = filepath + ".srs"
     os.system(f"sing-box rule-set convert --type adguard --output {srs_path} {filepath}")
 
+# ------------------ 主程序 ------------------
 def main():
     for url in dnsmasq_china_list:
         convert_dnsmasq(url)
@@ -81,7 +87,7 @@ def main():
         convert_adguard(url)
     for url in gfwlist_urls:
         convert_adguard(url)
-    print("All .srs files generated successfully.")
+    print("All .srs files generated successfully in", output_dir)
 
 if __name__ == "__main__":
     main()
