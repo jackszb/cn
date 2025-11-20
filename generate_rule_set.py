@@ -40,7 +40,7 @@ def convert_dnsmasq(name, url):
                 m = re.match(r"server=\/(.*)\/(.*)", line)
                 if m:
                     domain_suffix_list.append(m.group(1))
-    result = {"version": 1, "rules": [{"domain_suffix": domain_suffix_list}]}
+    result = {"version": 3, "rules": [{"domain_suffix": domain_suffix_list}]}
     filepath = os.path.join(output_dir, f"{name}.json")
     with open(filepath, "w") as f:
         json.dump(result, f, indent=4)
@@ -62,7 +62,7 @@ def convert_maxmind(url):
             ip_cidr_list.append(str(cidr))
     reader.close()
     ip_cidr_list = aggregate(ip_cidr_list)
-    result = {"version": 1, "rules": [{"ip_cidr": ip_cidr_list}]}
+    result = {"version": 3, "rules": [{"ip_cidr": ip_cidr_list}]}
     filepath = os.path.join(output_dir, "maxmind-cn.json")
     with open(filepath, "w") as f:
         json.dump(result, f, indent=4)
