@@ -10,11 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout 仓库
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # 2️⃣ 安装 sing-box
       - name: Setup sing-box
         env:
           SING_BOX_DEB_URL: "https://github.com/SagerNet/sing-box/releases/download/v1.12.12/sing-box_1.12.12_linux_amd64.deb"
@@ -22,21 +20,18 @@ jobs:
             wget -O sing-box.deb $SING_BOX_DEB_URL
             sudo dpkg -i sing-box.deb
 
-      # 3️⃣ 设置 Python 虚拟环境并安装依赖
       - name: Setup Python
         run: |
             python3 -m venv venv
             source venv/bin/activate
             pip install -r requirements.txt
 
-      # 4️⃣ 生成 .srs 文件到 work/
       - name: Generate .srs files
         run: |
             mkdir -p work
             source venv/bin/activate
             python3 generate_rule_set.py --output-dir work
 
-      # 5️⃣ 上传 artifact，方便下载
       - name: Upload .srs files as artifact
         uses: actions/upload-artifact@v4
         with:
