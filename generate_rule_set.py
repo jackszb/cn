@@ -17,16 +17,9 @@ os.makedirs(output_dir, exist_ok=True)
 # ----------------------------
 # 数据源配置
 # ----------------------------
-dnsmasq_china_list = [
-    ("accelerated-domains.china", "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf"),
-    ("apple.china", "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/apple.china.conf"),
-    ("google.china", "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/google.china.conf")
-]
-
-maxmind_url = "https://raw.githubusercontent.com/Dreamacro/maxmind-geoip/release/Country.mmdb"
-
-adguard_url = "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
+dnsmasq_url = "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf"
 gfwlist_url = "https://raw.githubusercontent.com/gfwlist/gfwlist/refs/heads/master/list.txt"
+maxmind_url = "https://raw.githubusercontent.com/Dreamacro/maxmind-geoip/release/Country.mmdb"
 
 # ----------------------------
 # 函数
@@ -44,6 +37,13 @@ def convert_dnsmasq(name, url):
     filepath = os.path.join(output_dir, f"{name}.json")
     with open(filepath, "w") as f:
         json.dump(result, f, indent=4)
+    return filepath
+
+def get_gfwlist(url):
+    r = requests.get(url)
+    filepath = os.path.join(output_dir, "gfwlist.txt")
+    with open(filepath, "wb") as f:
+        f.write(r.content)
     return filepath
 
 def convert_maxmind(url):
@@ -68,20 +68,6 @@ def convert_maxmind(url):
         json.dump(result, f, indent=4)
     return filepath
 
-def get_adguard(url):
-    r = requests.get(url)
-    filepath = os.path.join(output_dir, "adguard.txt")
-    with open(filepath, "wb") as f:
-        f.write(r.content)
-    return filepath
-
-def get_gfwlist(url):
-    r = requests.get(url)
-    filepath = os.path.join(output_dir, "gfwlist.txt")
-    with open(filepath, "wb") as f:
-        f.write(r.content)
-    return filepath
-
 def compile_to_srs(json_file):
     srs_file = json_file.replace(".json", ".srs")
     os.system(f"sing-box rule-set compile --output {srs_file} {json_file}")
@@ -99,26 +85,23 @@ def main():
     files_json = []
     files_txt = []
 
-    # 域名规则
-    for name, url in dnsmasq_china_list:
-        f = convert_dnsmasq(name, url)
-        files_json.append(f)
+    # 1️⃣ accelerated-domains.china
+    f = convert_dnsmasq("accelerated-domains.china", dnsmasq_url)
+    files_json.append(f)
 
-    # IP 规则
+    # 2️⃣ maxmind-cn
     f = convert_maxmind(maxmind_url)
     files_json.append(f)
 
-    # AdGuard/GFWList
-    f = get_adguard(adguard_url)
-    files_txt.append(f)
+    # 3️⃣ gfwlist
     f = get_gfwlist(gfwlist_url)
     files_txt.append(f)
 
-    # 编译 json -> srs
+    # 4️⃣ 编译 json -> srs
     for f in files_json:
         compile_to_srs(f)
 
-    # 转换 adguard/gfwlist -> srs
+    # 5️⃣ 转换 gfwlist -> srs
     for f in files_txt:
         convert_adguard_to_srs(f)
 
