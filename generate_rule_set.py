@@ -18,7 +18,7 @@ os.makedirs(output_dir, exist_ok=True)
 # 数据源配置
 # ----------------------------
 dnsmasq_url = "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf"
-gfwlist_url = "https://raw.githubusercontent.com/gfwlist/gfwlist/refs/heads/master/list.txt"
+gfwlist_url = "https://raw.githubusercontent.com/gfwlist/gfwlist/master/list.txt"
 maxmind_url = "https://raw.githubusercontent.com/Dreamacro/maxmind-geoip/release/Country.mmdb"
 
 # ----------------------------
