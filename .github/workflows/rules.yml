@@ -1,50 +1,43 @@
 name: Build Rules
 
 on:
-schedule:
-- cron: "0 0 * * *"
 workflow_dispatch:
 
 jobs:
 build:
 runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
 
 ```
-steps:
-  - name: Checkout
-    uses: actions/checkout@v4
-
-  - name: Install sing-box
+  - name: Install
     run: |
       curl -fsSL https://sing-box.app/install.sh | sh
       echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-  - name: Download & Clean Rules
+  - name: Download
     run: |
-      curl -L "https://static-file-global.353355.xyz/rules/cn-additional-list.txt" -o list.txt
+      curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
 
-      cat list.txt \
-        | sed 's/^[ \t]*//;s/[ \t]*$//' \
-        | tr 'A-Z' 'a-z' \
-        | grep -v '^#' \
-        | grep -v '^$' \
-        | sort -u > clean.txt
-
-  - name: Generate JSON (v4)
+  - name: Clean
     run: |
-      echo '{"version":4,"rules":[{"domain_suffix":[' > cn-additional.json
-      sed 's/^/"/;s/$/",/' clean.txt >> cn-additional.json
-      sed -i '$ s/,$//' cn-additional.json
-      echo ']}]}' >> cn-additional.json
+      cat list.txt | sed 's/^[ \t]*//;s/[ \t]*$//' | grep -v '^#' | grep -v '^$' | sort -u > clean.txt
 
-  - name: Compile SRS
+  - name: JSON
     run: |
-      sing-box rule-set compile cn-additional.json -o cn-additional.srs
+      echo '{"version":4,"rules":[{"domain_suffix":[' > cn.json
+      sed 's/^/"/;s/$/",/' clean.txt >> cn.json
+      sed -i '$ s/,$//' cn.json
+      echo ']}]}' >> cn.json
 
-  - name: Commit & Push
+  - name: SRS
     run: |
-      git config user.name "github-actions"
-      git config user.email "actions@github.com"
+      sing-box rule-set compile cn.json -o cn.srs
+
+  - name: Push
+    run: |
+      git config user.name "bot"
+      git config user.email "bot@users.noreply.github.com"
       git add .
-      git commit -m "update rules $(date -u +%Y-%m-%d)" || echo "no changes"
+      git commit -m "update" || echo ok
       git push
