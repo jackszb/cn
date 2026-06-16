@@ -2,7 +2,7 @@ name: Build Rules
 
 on:
 schedule:
-- cron: "0 0 * * *"   # 每天 UTC 00:00（中国早上8点）
+- cron: "0 0 * * *"
 workflow_dispatch:
 
 jobs:
@@ -21,15 +21,14 @@ steps:
 
   - name: Download & Clean Rules
     run: |
-      curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
+      curl -L "https://static-file-global.353355.xyz/rules/cn-additional-list.txt" -o list.txt
 
       cat list.txt \
         | sed 's/^[ \t]*//;s/[ \t]*$//' \
         | tr 'A-Z' 'a-z' \
         | grep -v '^#' \
         | grep -v '^$' \
-        | sort -u \
-        > clean.txt
+        | sort -u > clean.txt
 
   - name: Generate JSON (v4)
     run: |
@@ -46,6 +45,6 @@ steps:
     run: |
       git config user.name "github-actions"
       git config user.email "actions@github.com"
-      git add cn-additional.json cn-additional.srs
+      git add .
       git commit -m "update rules $(date -u +%Y-%m-%d)" || echo "no changes"
       git push
