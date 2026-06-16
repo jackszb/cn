@@ -2,6 +2,8 @@ name: Build Rules
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   build:
@@ -16,34 +18,46 @@ jobs:
           curl -fsSL https://sing-box.app/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Download
+      - name: Install tools (jq)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Download rules
         run: |
           curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
 
-      - name: Clean data
+      - name: Clean & dedupe
         run: |
           cat list.txt \
             | tr 'A-Z' 'a-z' \
             | sed 's/^[ \t]*//;s/[ \t]*$//' \
             | grep -v '^#' \
             | grep -v '^$' \
-            | sort -u > clean.txt
+            | sort -u \
+            > clean.txt
 
-      - name: Generate JSON v4
+      - name: Generate JSON v4 (pretty)
         run: |
-          echo '{"version":4,"rules":[{"domain_suffix":[' > cn.json
-          sed 's/^/"/;s/$/",/' clean.txt >> cn.json
-          sed -i '$ s/,$//' cn.json
-          echo ']}]}' >> cn.json
+          jq -n \
+            --rawfile list clean.txt \
+            '{
+              version: 4,
+              rules: [
+                {
+                  domain_suffix: ($list | split("\n") | map(select(length > 0)))
+                }
+              ]
+            }' > cn.json
 
-      - name: Build SRS
+      - name: Compile SRS
         run: |
           sing-box rule-set compile cn.json -o cn.srs
 
-      - name: Commit
+      - name: Commit & Push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add cn.json cn.srs
-          git commit -m "update rules" || exit 0
+          git commit -m "update rules $(date -u +%Y-%m-%d)" || exit 0
           git push
