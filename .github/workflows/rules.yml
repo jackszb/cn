@@ -1,0 +1,51 @@
+name: Build Rules
+
+on:
+schedule:
+- cron: "0 0 * * *"   # 每天 UTC 00:00（中国早上8点）
+workflow_dispatch:
+
+jobs:
+build:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Install sing-box
+    run: |
+      curl -fsSL https://sing-box.app/install.sh | sh
+      echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+  - name: Download & Clean Rules
+    run: |
+      curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
+
+      cat list.txt \
+        | sed 's/^[ \t]*//;s/[ \t]*$//' \
+        | tr 'A-Z' 'a-z' \
+        | grep -v '^#' \
+        | grep -v '^$' \
+        | sort -u \
+        > clean.txt
+
+  - name: Generate JSON (v4)
+    run: |
+      echo '{"version":4,"rules":[{"domain_suffix":[' > cn-additional.json
+      sed 's/^/"/;s/$/",/' clean.txt >> cn-additional.json
+      sed -i '$ s/,$//' cn-additional.json
+      echo ']}]}' >> cn-additional.json
+
+  - name: Compile SRS
+    run: |
+      sing-box rule-set compile cn-additional.json -o cn-additional.srs
+
+  - name: Commit & Push
+    run: |
+      git config user.name "github-actions"
+      git config user.email "actions@github.com"
+      git add cn-additional.json cn-additional.srs
+      git commit -m "update rules $(date -u +%Y-%m-%d)" || echo "no changes"
+      git push
