@@ -1,43 +1,49 @@
 name: Build Rules
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
 
-```
-  - name: Install
-    run: |
-      curl -fsSL https://sing-box.app/install.sh | sh
-      echo "$HOME/.local/bin" >> $GITHUB_PATH
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  - name: Download
-    run: |
-      curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
+      - name: Install sing-box
+        run: |
+          curl -fsSL https://sing-box.app/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-  - name: Clean
-    run: |
-      cat list.txt | sed 's/^[ \t]*//;s/[ \t]*$//' | grep -v '^#' | grep -v '^$' | sort -u > clean.txt
+      - name: Download
+        run: |
+          curl -L https://static-file-global.353355.xyz/rules/cn-additional-list.txt -o list.txt
 
-  - name: JSON
-    run: |
-      echo '{"version":4,"rules":[{"domain_suffix":[' > cn.json
-      sed 's/^/"/;s/$/",/' clean.txt >> cn.json
-      sed -i '$ s/,$//' cn.json
-      echo ']}]}' >> cn.json
+      - name: Clean data
+        run: |
+          cat list.txt \
+            | tr 'A-Z' 'a-z' \
+            | sed 's/^[ \t]*//;s/[ \t]*$//' \
+            | grep -v '^#' \
+            | grep -v '^$' \
+            | sort -u > clean.txt
 
-  - name: SRS
-    run: |
-      sing-box rule-set compile cn.json -o cn.srs
+      - name: Generate JSON v4
+        run: |
+          echo '{"version":4,"rules":[{"domain_suffix":[' > cn.json
+          sed 's/^/"/;s/$/",/' clean.txt >> cn.json
+          sed -i '$ s/,$//' cn.json
+          echo ']}]}' >> cn.json
 
-  - name: Push
-    run: |
-      git config user.name "bot"
-      git config user.email "bot@users.noreply.github.com"
-      git add .
-      git commit -m "update" || echo ok
-      git push
+      - name: Build SRS
+        run: |
+          sing-box rule-set compile cn.json -o cn.srs
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add cn.json cn.srs
+          git commit -m "update rules" || exit 0
+          git push
